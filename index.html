@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        #map {
+            width: 1229px;
+            height: 588px;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.wms.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/proj4.js"></script>
+        <script src="js/proj4leaflet.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/nzibatirazilr_1.js"></script>
+        <script src="data/kilib_2.js"></script>
+        <script src="data/kilmyib_3.js"></script>
+        <script src="data/umtaplmad_4.js"></script>
+        <script src="data/Buludagrqmyyndir_5.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var crs = new L.Proj.CRS('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +wktext +no_defs', {
+            resolutions: [2800, 1400, 700, 350, 175, 84, 42, 21, 11.2, 5.6, 2.8, 1.4, 0.7, 0.35, 0.14, 0.07],
+        });
+        var map = L.map('map', {
+            crs: crs,
+            continuousWorld: false,
+            worldCopyJump: false, 
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+            map.setMaxBounds(map.getBounds());
+        }
+        map.createPane('pane_Sentinel2Noyabr2024_0');
+        map.getPane('pane_Sentinel2Noyabr2024_0').style.zIndex = 400;
+        var layer_Sentinel2Noyabr2024_0 = L.WMS.layer("https://sh.dataspace.copernicus.eu/ogc/wms/f365eb74-e9a3-4f53-ac5b-fe023d7f6ab5?showLogo=false&time=2024-10-26%2F2024-11-29%2FP1D&priority=leastCC&maxcc=100&preview=1", "TRUE_COLOR", {
+            pane: 'pane_Sentinel2Noyabr2024_0',
+            format: 'image/png',
+            uppercase: true,
+            transparent: true,
+            continuousWorld : true,
+            tiled: true,
+            info_format: 'text/html',
+            opacity: 1,
+            identify: false,
+            attribution: '',
+        });
+        map.addLayer(layer_Sentinel2Noyabr2024_0);
+        function pop_nzibatirazilr_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_nzibatirazilr_1_0() {
+            return {
+                pane: 'pane_nzibatirazilr_1',
+                opacity: 1,
+                color: 'rgba(246,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_nzibatirazilr_1');
+        map.getPane('pane_nzibatirazilr_1').style.zIndex = 401;
+        map.getPane('pane_nzibatirazilr_1').style['mix-blend-mode'] = 'normal';
+        var layer_nzibatirazilr_1 = new L.geoJson(json_nzibatirazilr_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_nzibatirazilr_1',
+            layerName: 'layer_nzibatirazilr_1',
+            pane: 'pane_nzibatirazilr_1',
+            onEachFeature: pop_nzibatirazilr_1,
+            style: style_nzibatirazilr_1_0,
+        });
+        bounds_group.addLayer(layer_nzibatirazilr_1);
+        map.addLayer(layer_nzibatirazilr_1);
+        function pop_kilib_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="REYESTR_NUMBER" colspan="2"><strong>REYESTR_NUMBER</strong><br />' + (feature.properties['REYESTR_NUMBER'] !== null ? autolinker.link(String(feature.properties['REYESTR_NUMBER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="İnzibati ərazi vahidi (rayon (GIS))" colspan="2"><strong>İnzibati ərazi vahidi (rayon (GIS))</strong><br />' + (feature.properties['İnzibati ərazi vahidi (rayon (GIS))'] !== null ? autolinker.link(String(feature.properties['İnzibati ərazi vahidi (rayon (GIS))']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Ərazi vahidi (kənd və yaxud qəsəbə)" colspan="2"><strong>Ərazi vahidi (kənd və yaxud qəsəbə)</strong><br />' + (feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)'] !== null ? autolinker.link(String(feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Bitkinin növü" colspan="2"><strong>Bitkinin növü</strong><br />' + (feature.properties['Bitkinin növü'] !== null ? autolinker.link(String(feature.properties['Bitkinin növü']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Əkin ili</strong><br />' + (feature.properties['Əkin ili'] !== null ? autolinker.link(String(feature.properties['Əkin ili']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ayı" colspan="2"><strong>Əkin ayı</strong><br />' + (feature.properties['Əkin ayı'] !== null ? autolinker.link(String(feature.properties['Əkin ayı']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_kilib_2_0() {
+            return {
+                pane: 'pane_kilib_2',
+                opacity: 1,
+                color: 'rgba(101,228,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_kilib_2');
+        map.getPane('pane_kilib_2').style.zIndex = 402;
+        map.getPane('pane_kilib_2').style['mix-blend-mode'] = 'normal';
+        var layer_kilib_2 = new L.geoJson(json_kilib_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_kilib_2',
+            layerName: 'layer_kilib_2',
+            pane: 'pane_kilib_2',
+            onEachFeature: pop_kilib_2,
+            style: style_kilib_2_0,
+        });
+        bounds_group.addLayer(layer_kilib_2);
+        map.addLayer(layer_kilib_2);
+        function pop_kilmyib_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="REYESTR_NUMBER" colspan="2"><strong>REYESTR_NUMBER</strong><br />' + (feature.properties['REYESTR_NUMBER'] !== null ? autolinker.link(String(feature.properties['REYESTR_NUMBER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="İnzibati ərazi vahidi (rayon (GIS))" colspan="2"><strong>İnzibati ərazi vahidi (rayon (GIS))</strong><br />' + (feature.properties['İnzibati ərazi vahidi (rayon (GIS))'] !== null ? autolinker.link(String(feature.properties['İnzibati ərazi vahidi (rayon (GIS))']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Ərazi vahidi (kənd və yaxud qəsəbə)" colspan="2"><strong>Ərazi vahidi (kənd və yaxud qəsəbə)</strong><br />' + (feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)'] !== null ? autolinker.link(String(feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Bitkinin növü" colspan="2"><strong>Bitkinin növü</strong><br />' + (feature.properties['Bitkinin növü'] !== null ? autolinker.link(String(feature.properties['Bitkinin növü']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ili" colspan="2"><strong>Əkin ili</strong><br />' + (feature.properties['Əkin ili'] !== null ? autolinker.link(String(feature.properties['Əkin ili']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ayı" colspan="2"><strong>Əkin ayı</strong><br />' + (feature.properties['Əkin ayı'] !== null ? autolinker.link(String(feature.properties['Əkin ayı']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_kilmyib_3_0() {
+            return {
+                pane: 'pane_kilmyib_3',
+                opacity: 1,
+                color: 'rgba(246,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_kilmyib_3');
+        map.getPane('pane_kilmyib_3').style.zIndex = 403;
+        map.getPane('pane_kilmyib_3').style['mix-blend-mode'] = 'normal';
+        var layer_kilmyib_3 = new L.geoJson(json_kilmyib_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_kilmyib_3',
+            layerName: 'layer_kilmyib_3',
+            pane: 'pane_kilmyib_3',
+            onEachFeature: pop_kilmyib_3,
+            style: style_kilmyib_3_0,
+        });
+        bounds_group.addLayer(layer_kilmyib_3);
+        map.addLayer(layer_kilmyib_3);
+        function pop_umtaplmad_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="REYESTR_NUMBER" colspan="2"><strong>REYESTR_NUMBER</strong><br />' + (feature.properties['REYESTR_NUMBER'] !== null ? autolinker.link(String(feature.properties['REYESTR_NUMBER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="İnzibati ərazi vahidi (rayon (GIS))" colspan="2"><strong>İnzibati ərazi vahidi (rayon (GIS))</strong><br />' + (feature.properties['İnzibati ərazi vahidi (rayon (GIS))'] !== null ? autolinker.link(String(feature.properties['İnzibati ərazi vahidi (rayon (GIS))']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Ərazi vahidi (kənd və yaxud qəsəbə)" colspan="2"><strong>Ərazi vahidi (kənd və yaxud qəsəbə)</strong><br />' + (feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)'] !== null ? autolinker.link(String(feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Bitkinin növü" colspan="2"><strong>Bitkinin növü</strong><br />' + (feature.properties['Bitkinin növü'] !== null ? autolinker.link(String(feature.properties['Bitkinin növü']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ili" colspan="2"><strong>Əkin ili</strong><br />' + (feature.properties['Əkin ili'] !== null ? autolinker.link(String(feature.properties['Əkin ili']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ayı" colspan="2"><strong>Əkin ayı</strong><br />' + (feature.properties['Əkin ayı'] !== null ? autolinker.link(String(feature.properties['Əkin ayı']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_umtaplmad_4_0() {
+            return {
+                pane: 'pane_umtaplmad_4',
+                opacity: 1,
+                color: 'rgba(255,234,1,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_umtaplmad_4');
+        map.getPane('pane_umtaplmad_4').style.zIndex = 404;
+        map.getPane('pane_umtaplmad_4').style['mix-blend-mode'] = 'normal';
+        var layer_umtaplmad_4 = new L.geoJson(json_umtaplmad_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_umtaplmad_4',
+            layerName: 'layer_umtaplmad_4',
+            pane: 'pane_umtaplmad_4',
+            onEachFeature: pop_umtaplmad_4,
+            style: style_umtaplmad_4_0,
+        });
+        bounds_group.addLayer(layer_umtaplmad_4);
+        map.addLayer(layer_umtaplmad_4);
+        function pop_Buludagrqmyyndir_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="REYESTR_NUMBER" colspan="2"><strong>REYESTR_NUMBER</strong><br />' + (feature.properties['REYESTR_NUMBER'] !== null ? autolinker.link(String(feature.properties['REYESTR_NUMBER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="İnzibati ərazi vahidi (rayon (GIS))" colspan="2"><strong>İnzibati ərazi vahidi (rayon (GIS))</strong><br />' + (feature.properties['İnzibati ərazi vahidi (rayon (GIS))'] !== null ? autolinker.link(String(feature.properties['İnzibati ərazi vahidi (rayon (GIS))']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Ərazi vahidi (kənd və yaxud qəsəbə)" colspan="2"><strong>Ərazi vahidi (kənd və yaxud qəsəbə)</strong><br />' + (feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)'] !== null ? autolinker.link(String(feature.properties['Ərazi vahidi (kənd və yaxud qəsəbə)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Bitkinin növü" colspan="2"><strong>Bitkinin növü</strong><br />' + (feature.properties['Bitkinin növü'] !== null ? autolinker.link(String(feature.properties['Bitkinin növü']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ili" colspan="2"><strong>Əkin ili</strong><br />' + (feature.properties['Əkin ili'] !== null ? autolinker.link(String(feature.properties['Əkin ili']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Əkin ayı" colspan="2"><strong>Əkin ayı</strong><br />' + (feature.properties['Əkin ayı'] !== null ? autolinker.link(String(feature.properties['Əkin ayı']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Buludagrqmyyndir_5_0() {
+            return {
+                pane: 'pane_Buludagrqmyyndir_5',
+                opacity: 1,
+                color: 'rgba(69,155,254,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Buludagrqmyyndir_5');
+        map.getPane('pane_Buludagrqmyyndir_5').style.zIndex = 405;
+        map.getPane('pane_Buludagrqmyyndir_5').style['mix-blend-mode'] = 'normal';
+        var layer_Buludagrqmyyndir_5 = new L.geoJson(json_Buludagrqmyyndir_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Buludagrqmyyndir_5',
+            layerName: 'layer_Buludagrqmyyndir_5',
+            pane: 'pane_Buludagrqmyyndir_5',
+            onEachFeature: pop_Buludagrqmyyndir_5,
+            style: style_Buludagrqmyyndir_5_0,
+        });
+        bounds_group.addLayer(layer_Buludagrqmyyndir_5);
+        map.addLayer(layer_Buludagrqmyyndir_5);
+        var overlaysTree = [
+            {label: '<img src="legend/Buludagrqmyyndir_5.png" /> Buluda görə q-müəyyəndir', layer: layer_Buludagrqmyyndir_5},
+            {label: '<img src="legend/umtaplmad_4.png" /> Şum tapılmadı', layer: layer_umtaplmad_4},
+            {label: '<img src="legend/kilmyib_3.png" /> Əkilməyib', layer: layer_kilmyib_3},
+            {label: '<img src="legend/kilib_2.png" /> Əkilib', layer: layer_kilib_2},
+            {label: '<img src="legend/nzibatirazilr_1.png" /> İnzibati ərazilər', layer: layer_nzibatirazilr_1},
+            {label: "Sentinel-2 - Noyabr- 2024", layer: layer_Sentinel2Noyabr2024_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_kilmyib_3,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'REYESTR_NUMBER'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"İnzibati ərazi vahidi (rayon (GIS))": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_nzibatirazivahidirayonGIS = document.createElement('div');
+            div_nzibatirazivahidirayonGIS.id = "div_nzibatirazivahidirayonGIS";
+            div_nzibatirazivahidirayonGIS.className= "filterselect";
+            document.getElementById("menu").appendChild(div_nzibatirazivahidirayonGIS);
+            sel_nzibatirazivahidirayonGIS = document.createElement('select');
+            sel_nzibatirazivahidirayonGIS.multiple = true;
+            sel_nzibatirazivahidirayonGIS.size = 10;
+            sel_nzibatirazivahidirayonGIS.id = "sel_nzibatirazivahidirayonGIS";
+            var nzibatirazivahidirayonGIS_options_str = "<option value='' unselected></option>";
+            sel_nzibatirazivahidirayonGIS.onchange = function(){filterFunc()};
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Abşeron">Abşeron</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ağcabədi">Ağcabədi</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ağdam">Ağdam</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ağdaş">Ağdaş</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ağstafa">Ağstafa</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ağsu">Ağsu</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Balakən">Balakən</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Beyləqan">Beyləqan</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Biləsuvar">Biləsuvar</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Bərdə">Bərdə</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Cəlilabad">Cəlilabad</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Füzuli">Füzuli</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Goranboy">Goranboy</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Göygöl">Göygöl</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Göyçay">Göyçay</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Gədəbəy">Gədəbəy</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Hacıqabul">Hacıqabul</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Kürdəmir">Kürdəmir</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Lerik">Lerik</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Lənkəran">Lənkəran</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Masallı">Masallı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Mingəçevir">Mingəçevir</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Naftalan">Naftalan</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Neftçala">Neftçala</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Oğuz">Oğuz</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Qax">Qax</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Qazax">Qazax</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Qobustan">Qobustan</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Quba">Quba</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Qusar">Qusar</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Qəbələ">Qəbələ</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Saatlı">Saatlı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Sabirabad">Sabirabad</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Salyan">Salyan</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Samux">Samux</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Siyəzən">Siyəzən</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Tovuz">Tovuz</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Tərtər">Tərtər</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Ucar">Ucar</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Xaçmaz">Xaçmaz</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Xocavənd">Xocavənd</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Xızı">Xızı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Yardımlı">Yardımlı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Yevlax">Yevlax</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Zaqatala">Zaqatala</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Zərdab">Zərdab</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="İmişli">İmişli</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="İsmayıllı">İsmayıllı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Şabran">Şabran</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Şamaxı">Şamaxı</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Şəki">Şəki</option>';
+            nzibatirazivahidirayonGIS_options_str  += '<option value="Şəmkir">Şəmkir</option>';
+            sel_nzibatirazivahidirayonGIS.innerHTML = nzibatirazivahidirayonGIS_options_str;
+            div_nzibatirazivahidirayonGIS.appendChild(sel_nzibatirazivahidirayonGIS);
+            var lab_nzibatirazivahidirayonGIS = document.createElement('div');
+            lab_nzibatirazivahidirayonGIS.innerHTML = 'İnzibati ərazi vahidi (rayon (GIS))';
+            lab_nzibatirazivahidirayonGIS.className = 'filterlabel';
+            div_nzibatirazivahidirayonGIS.appendChild(lab_nzibatirazivahidirayonGIS);
+            var reset_nzibatirazivahidirayonGIS = document.createElement('div');
+            reset_nzibatirazivahidirayonGIS.innerHTML = 'clear filter';
+            reset_nzibatirazivahidirayonGIS.className = 'filterlabel';
+            reset_nzibatirazivahidirayonGIS.onclick = function() {
+                var options = document.getElementById("sel_nzibatirazivahidirayonGIS").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_nzibatirazivahidirayonGIS.appendChild(reset_nzibatirazivahidirayonGIS);
+        </script>
+    </body>
+</html>
